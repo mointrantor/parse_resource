@@ -183,6 +183,28 @@ module ParseResource
       load_settings
     end
 
+    def self.request_header
+      {
+        "Content-Type" => "application/json",
+        "User-Agent" => "Parse for Ruby",
+        "X-Parse-Master-Key" => @@settings['master_key'],
+        "X-Parse-Application-Id" => @@settings['app_id'],
+        "X-Parse-REST-API-Key" => @@settings['api_key']
+      }
+    end
+
+    def self.host
+      @@settings['host'] || 'https://parse.com'
+    end
+
+    def self.path
+      @@settings['path'] || '1'
+    end
+
+    def self.full_path
+      host + '/' + path
+    end
+
     # Gets the current class's model name for the URI
     def self.model_name_uri
       # This is a workaround to allow the user to specify a custom class
@@ -201,7 +223,7 @@ module ParseResource
 
     # Gets the current class's Parse.com base_uri
     def self.model_base_uri
-      "https://api.parse.com/1/#{model_name_uri}"
+      "#{full_path}/#{model_name_uri}"
     end
 
     # Gets the current instance's parent class's Parse.com base_uri
@@ -214,12 +236,7 @@ module ParseResource
     # sends requests to [base_uri]/[classname]
     #
     def self.resource
-      load_settings
-
-      #refactor to settings['app_id'] etc
-      app_id     = @@settings['app_id']
-      master_key = @@settings['master_key']
-      RestClient::Resource.new(self.model_base_uri, app_id, master_key)
+      RestClient::Resource.new(self.model_base_uri, :headers => request_header)
     end
 
     # Batch requests
@@ -229,13 +246,10 @@ module ParseResource
     #
     def self.batch_save(save_objects, slice_size = 20, method = nil)
       return true if save_objects.blank?
-      load_settings
+      #load_settings
 
-      base_uri = "https://api.parse.com/1/batch"
-      app_id     = @@settings['app_id']
-      master_key = @@settings['master_key']
-
-      res = RestClient::Resource.new(base_uri, app_id, master_key)
+      base_uri = "#{full_path}/batch"
+      res = RestClient::Resource.new(base_uri, :headers => request_header)
 
       # Batch saves seem to fail if they're too big. We'll slice it up into multiple posts if they are.
       save_objects.each_slice(slice_size) do |objects|
@@ -311,20 +325,14 @@ module ParseResource
     # sends requests to [base_uri]/files
     #
     def self.upload(file_instance, filename, options={})
-      load_settings
-
-      base_uri = "https://api.parse.com/1/files"
-
-      #refactor to settings['app_id'] etc
-      app_id     = @@settings['app_id']
-      master_key = @@settings['master_key']
-
+      base_uri = "#{full_path}/files"
       options[:content_type] ||= 'image/jpg' # TODO: Guess mime type here.
       file_instance = File.new(file_instance, 'rb') if file_instance.is_a? String
 
       filename = filename.parameterize
 
-      private_resource = RestClient::Resource.new "#{base_uri}/#{filename}", app_id, master_key
+      #private_resource = RestClient::Resource.new "#{base_uri}/#{filename}", app_id, master_key
+      private_resource = RestClient::Resource.new "#{base_uri}/#{filename}", :headers => request_header
       private_resource.post(file_instance, options) do |resp, req, res, &block|
         return false if resp.code == 400
         return JSON.parse(resp) rescue {"code" => 0, "error" => "unknown error"}
