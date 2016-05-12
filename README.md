@@ -49,15 +49,24 @@ Create an account at Parse.com. Then create an application and copy the `app_id`
 ```yml
 development:
   app_id: 1234567890
+  api_key: vJtExpX
   master_key: abcdefgh
+  host: http://255.255.255.255:3333
+  path: parse
 
 test:
   app_id: 1234567890
+  api_key: vJtExpX
   master_key: abcdefgh
+  host: http://255.255.255.255:3333
+  path: parse
 
 production:
   app_id: 1234567890
+  api_key: vJtExpX
   master_key: abcdefgh
+  host: http://255.255.255.255:3333
+  path: parse
 ```
 
 If you keep `parse_resource.yml` in `.gitignore`, ParseResource will alternatively look for the api keys in environment variables. If using Heroku you can easily set your api keys in the Heroku environment using:
@@ -65,6 +74,12 @@ If you keep `parse_resource.yml` in `.gitignore`, ParseResource will alternative
 ```
 heroku config:set PARSE_RESOURCE_APPLICATION_ID=1234567890
 heroku config:set PARSE_RESOURCE_MASTER_KEY=abcdefgh
+```
+
+Finally create a file in initializer and put
+
+```ruby
+ParseResource::Base.load_settings
 ```
 
 You can create separate Parse databases if you want. If not, include the same info for each environment.
